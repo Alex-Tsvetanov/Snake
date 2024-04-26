@@ -44,9 +44,6 @@ public:
 
 int main()
 {
-	/*for (int ch = 0; ch < 256; ch++) {
-		std::cout << ch << (char)ch << std::endl;
-	}*/
 	ScreenManager app;
 	app.start();
 }
