@@ -5,7 +5,6 @@
 #include <chrono>
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 #include <conio.h>
-#include "ScreenState.h"
 #include "EndOfScreenException.h"
 #include "ColorfulConsole.h"
 
