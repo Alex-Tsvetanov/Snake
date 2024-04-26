@@ -26,7 +26,7 @@ public:
 	bool isTail(const Point& p) const {
 		return !isHead(p) && std::any_of(cells.cbegin(), cells.cend(), [&p](const Point& cell) { return p == cell; });
 	}
-	int getSize() const {
+	size_t getSize() const {
 		return cells.size();
 	}
 	void move(Direction dir, Grid& grid) {
@@ -78,7 +78,7 @@ public:
 			try {
 				grid.eatAppleOn(moved_head);
 			}
-			catch (AppleNotFound& e) {
+			catch (AppleNotFound&) {
 				// we fucked up something big times
 				exit(1);
 			}

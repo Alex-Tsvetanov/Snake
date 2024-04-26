@@ -52,5 +52,23 @@
     <ClInclude Include="GameplayScreen.h">
       <Filter>Header Files\screens</Filter>
     </ClInclude>
+    <ClInclude Include="ScreenState.h">
+      <Filter>Header Files\screens</Filter>
+    </ClInclude>
+    <ClInclude Include="EndOfScreenException.h">
+      <Filter>Header Files\exceptions</Filter>
+    </ClInclude>
+    <ClInclude Include="HomeScreen.h">
+      <Filter>Header Files\screens</Filter>
+    </ClInclude>
+    <ClInclude Include="EndScreen.h">
+      <Filter>Header Files\screens</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorfulConsole.h">
+      <Filter>Header Files\screens</Filter>
+    </ClInclude>
+    <ClInclude Include="FinalScore.h">
+      <Filter>Header Files\gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

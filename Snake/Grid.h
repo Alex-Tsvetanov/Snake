@@ -21,6 +21,9 @@ public:
 	void addApple(const Point& p) {
 		apples.push_back(p);
 	}
+	int numberOfApples() const {
+		return apples.size();
+	}
 	int sizeX() const {
 		return size_x;
 	}

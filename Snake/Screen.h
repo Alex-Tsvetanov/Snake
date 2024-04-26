@@ -3,45 +3,87 @@
 #include <stdlib.h>
 #include <thread>
 #include <chrono>
-#include <condition_variable>
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+#include <conio.h>
+#include "ScreenState.h"
+#include "EndOfScreenException.h"
+#include "ColorfulConsole.h"
 
 class Screen
 {
-private:
-	int fps;
-	std::condition_variable cv;
-	std::mutex cv_m;
+protected:
+	int frames_per_second;
+	int draws_per_update; // 0 to disable updates
+	std::atomic<bool> active;
+	ColorfulConsole console;
+	void* dataToEndScreen;
 public:
-	virtual void invalidateView() = 0;
-	virtual void draw() const = 0;
+	Screen(int fps, int dpu) {
+		frames_per_second = fps;
+		draws_per_update = dpu;
+		active = false;
+		dataToEndScreen = nullptr;
+	}
+
+	virtual void draw() = 0;
 	virtual void update() = 0;
 	virtual void onKeyPressed(Key) = 0;
+	virtual void setDataFromPreviousScreen(void*) = 0;
 
-	void clearScreen() const {
-		system("cls");
+	void clearScreen() {
+		console.clear();
+	}
+
+	void continousDrawing() {
+		try {
+			int draws = 0;
+			while (active) {
+				draw();
+				draws++;
+				std::this_thread::sleep_for(1000000us / frames_per_second);
+				if (draws == draws_per_update) {
+					update();
+					draws = 0;
+				}
+			}
+		}
+		catch (EndOfScreenException& e) {
+			active = false;
+			dataToEndScreen = e.customDataForNextScreen;
+		}
 	}
 
 	void start() {
-		// background thread
-		std::thread gameplay(
-			[this]() {
-				try {
-					while(true) {
-						std::unique_lock<std::mutex> lk(cv_m);
-						this->draw();
-						cv.wait_for(lk, (1000000us / fps));
-					}
-				}
-				catch (...) {
-					return;
-				}
-			}
-		);
-		gameplay.detach(); // deatch the thread from the main thread
+		active = true;
+		// background thread for drawing
+		std::thread([this]() { this->continousDrawing(); }).detach(); // deatch the thread from the main thread
 
 		// main thread (listening for commands)
-		while (true )
+		try {
+			while (active) {
+				// wait for a key down
+				int c = _getch();
+				Key keyPressed = Key(-1, -1);
+				if (c && c != 224)
+				{
+					keyPressed = Key(c);
+				}
+				else
+				{
+
+					keyPressed = Key(c, _getch());
+				}
+				this->onKeyPressed(keyPressed);
+			}
+		}
+		catch (EndOfScreenException& e) {
+			this->active = false;
+			dataToEndScreen = e.customDataForNextScreen;
+		}
+		throw EndOfScreenException(dataToEndScreen);
+	}
+	void stop() {
+		active = false;
 	}
 };
 
