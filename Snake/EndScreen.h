@@ -7,7 +7,7 @@ class EndScreen : public Screen
 {
 	FinalScore* winOrLose;
 public:
-	EndScreen() : Screen(10, 0) { }
+	EndScreen() : Screen(1h) { this->winOrLose = nullptr; }
 	~EndScreen() { delete this->winOrLose; }
 	// Inherited via Screen
 	void draw() override {
@@ -17,15 +17,16 @@ public:
 		else {
 			console.append("You finished with length of ", FOREGROUND_WHITE);
 			char buff[30];
-			console.append(_itoa(winOrLose->length, buff, 10), FOREGROUND_WHITE);
+			console.append(_itoa(winOrLose->length, buff, 10), FOREGROUND_GREEN);
 			console.append(".\n", FOREGROUND_WHITE);
 			console.append("You missed a couple of apples, but well played, player! See you next time.\nPress any key to exit.", FOREGROUND_WHITE);
 		}
 		console.finalize();
 	}
-	void update() override { }
+	void update() override {
+		throw EndOfScreenException(nullptr);
+	}
 	void onKeyPressed(const Key) override {
-		this->active = false;
 		throw EndOfScreenException(nullptr);
 	}
 	void setDataFromPreviousScreen(void* win_or_lose) override {

@@ -5,16 +5,17 @@
 class HomeScreen : public Screen
 {
 public:
-	HomeScreen() : Screen(10, 0) { }
+	HomeScreen() : Screen(5s) { }
 	// Inherited via Screen
 	void draw() override {
 		clearScreen();
-		console.append("Hello, player! This is the game Snake.\nPress any key to start it.\n", FOREGROUND_WHITE);
+		console.append("Hello, player! This is the game Snake.\nPress any key to start it.\n(In 5 seconds the game will start automatically)", FOREGROUND_WHITE);
 		console.finalize();
 	}
-	void update() override { }
+	void update() override {
+		throw EndOfScreenException(nullptr);
+	}
 	void onKeyPressed(const Key) override {
-		this->active = false;
 		throw EndOfScreenException(nullptr);
 	}
 

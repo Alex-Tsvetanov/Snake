@@ -2,6 +2,7 @@
 #include "Key.h"
 #include <stdlib.h>
 #include <thread>
+#include <mutex>
 #include <chrono>
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 #include <conio.h>
@@ -11,17 +12,22 @@ using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 class Screen
 {
 protected:
-	int frames_per_second;
-	int draws_per_update; // 0 to disable updates
+	enum UpdateStatus {
+		Forced,
+		Scheduled
+	};
 	std::atomic<bool> active;
 	ColorfulConsole console;
 	void* dataToEndScreen;
+	UpdateStatus automaicUpdater;
+	std::chrono::duration<double, std::micro> delay;
+	std::mutex updating;
 public:
-	Screen(int fps, int dpu) {
-		frames_per_second = fps;
-		draws_per_update = dpu;
+	Screen(std::chrono::duration<double, std::micro> delayBeforeAutomaticAction) {
+		delay = delayBeforeAutomaticAction;
 		active = false;
 		dataToEndScreen = nullptr;
+		automaicUpdater = UpdateStatus::Scheduled;
 	}
 
 	virtual void draw() = 0;
@@ -35,19 +41,31 @@ public:
 
 	void continousDrawing() {
 		try {
-			int draws = 0;
+			auto time_for_scheduled_update = std::chrono::steady_clock::now() + delay;
+			draw();
 			while (active) {
-				draw();
-				draws++;
-				std::this_thread::sleep_for(1000000us / frames_per_second);
-				if (draws == draws_per_update) {
+				// an immediate update has been requested
+				if (automaicUpdater == UpdateStatus::Forced) {
+					std::lock_guard<std::mutex> lk (updating);
 					update();
-					draws = 0;
+					draw();
+					automaicUpdater = UpdateStatus::Scheduled; // reset to automatic updater
+					time_for_scheduled_update = std::chrono::steady_clock::now() + delay; // set next time for automatic update
+				}
+				// no user input enforced immediate action
+				else {
+					// and the time for automatic move has come
+					if (std::chrono::steady_clock::now() >= time_for_scheduled_update) {
+						std::lock_guard<std::mutex> lk(updating);
+						update();
+						draw();
+						time_for_scheduled_update = std::chrono::steady_clock::now() + delay; // set next time for automatic update
+					}
 				}
 			}
 		}
 		catch (EndOfScreenException& e) {
-			active = false;
+			this->active = false;
 			dataToEndScreen = e.customDataForNextScreen;
 		}
 	}
@@ -60,19 +78,15 @@ public:
 		// main thread (listening for commands)
 		try {
 			while (active) {
-				// wait for a key down
-				int c = _getch();
-				Key keyPressed = Key(-1, -1);
-				if (c && c != 224)
-				{
-					keyPressed = Key(c);
+				for (int key = 0x01; key <= 0xFE; key++) {
+					// the key is pressed
+					if ((GetAsyncKeyState(key) & 0x0001) != 0) {
+						Key keyPressed = Key(key);
+						std::lock_guard<std::mutex> lk(updating);
+						this->onKeyPressed(keyPressed);
+						break;
+					}
 				}
-				else
-				{
-
-					keyPressed = Key(c, _getch());
-				}
-				this->onKeyPressed(keyPressed);
 			}
 		}
 		catch (EndOfScreenException& e) {
